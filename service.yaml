@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: covid-resources-service
+spec:
+  replicas: 3  # Set to 2 or 3 or more for rolling updates
+  selector:
+    app: covid-resources
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000  # your app container port
+  type: LoadBalancer  # or NodePort if LoadBalancer not available
