@@ -2,7 +2,8 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('your-dockerhub-credentials-id') // replace with your ID
+        // Updated credential ID to match what you create in Jenkins
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-danime08')
         IMAGE_NAME = "danime08/cw2-server"
     }
 
@@ -10,7 +11,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'docker build -t $IMAGE_NAME .'
+                    sh 'docker build -t "$IMAGE_NAME" .'
                 }
             }
         }
@@ -18,7 +19,8 @@ pipeline {
         stage('Test Docker Container') {
             steps {
                 script {
-                    sh 'docker run --rm $IMAGE_NAME npm test || true'
+                    // Run tests inside the container; '|| true' to not fail the pipeline on test errors
+                    sh 'docker run --rm "$IMAGE_NAME" npm test || true'
                 }
             }
         }
@@ -40,4 +42,5 @@ pipeline {
         }
     }
 }
+
 
