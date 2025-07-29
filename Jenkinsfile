@@ -1,54 +1,53 @@
 pipeline {
-  agent any
+    agent any
 
-  environment {
-    IMAGE_NAME = 'yourdockerhubusername/cw2-server'   // change this to your DockerHub repo/image name
-    REGISTRY_CREDENTIALS = 'dockerhub'                 // Jenkins credential ID for DockerHub
-  }
-
-  stages {
-
-    stage('Clone') {
-      steps {
-        git credentialsId: 'github', url: 'https://github.com/danime08/cw2-server.git'
-      }
+    environment {
+        IMAGE_NAME = "danime08/cw2-server"
+        IMAGE_TAG = "latest"
     }
 
-    stage('Build Docker Image') {
-      steps {
-        script {
-          sh 'docker build -t $IMAGE_NAME .'
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/danime08/cw2-server.git'
+            }
         }
-      }
-    }
 
-    stage('Test Container Launch') {
-      steps {
-        script {
-          sh 'docker run --rm $IMAGE_NAME echo "Container started successfully"'
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh "docker build -t $IMAGE_NAME:$IMAGE_TAG ."
+                }
+            }
         }
-      }
-    }
 
-    stage('Push to DockerHub') {
-      steps {
-        script {
-          docker.withRegistry('https://index.docker.io/v1/', REGISTRY_CREDENTIALS) {
-            sh 'docker push $IMAGE_NAME'
-          }
+        stage('Test Docker Container') {
+            steps {
+                script {
+                    sh "docker run -d -p 3000:3000 --name test-container $IMAGE_NAME:$IMAGE_TAG"
+                    sh "sleep 5"
+                    sh "docker ps | grep test-container"
+                    sh "docker stop test-container"
+                    sh "docker rm test-container"
+                }
+            }
         }
-      }
-    }
 
-    stage('Deploy to Kubernetes') {
-      steps {
-        script {
-          // Change your-deployment-name and your-container-name to your actual deployment/container names in Kubernetes
-          sh 'kubectl set image deployment/your-deployment-name your-container-name=$IMAGE_NAME'
-          // Optional: wait for rollout to finish
-          sh 'kubectl rollout status deployment/your-deployment-name'
+        stage('Push to DockerHub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
+                    sh "docker push $IMAGE_NAME:$IMAGE_TAG"
+                }
+            }
         }
-      }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh "scp k8s-deploy.yaml ubuntu@<YOUR_PROD_SERVER_IP>:/home/ubuntu/"
+                sh "ssh ubuntu@<YOUR_PROD_SERVER_IP> 'kubectl apply -f /home/ubuntu/k8s-deploy.yaml'"
+            }
+        }
     }
-  }
 }
+
