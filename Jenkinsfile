@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     environment {
+        // Make sure this ID matches your Jenkins DockerHub credentials ID exactly
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-danime08')
         IMAGE_NAME = "danime08/cw2-server"
     }
@@ -18,7 +19,7 @@ pipeline {
         stage('Test Docker Container') {
             steps {
                 script {
-                    // Optional: remove `|| true` if you want pipeline to fail on test errors
+                    // Optional: remove '|| true' to fail pipeline on test errors
                     sh "docker run --rm ${IMAGE_NAME} npm test || true"
                 }
             }
@@ -27,7 +28,8 @@ pipeline {
         stage('Push to DockerHub') {
             steps {
                 script {
-                    docker.withRegistry('', DOCKERHUB_CREDENTIALS) {
+                    // Use explicit DockerHub registry URL
+                    docker.withRegistry('https://index.docker.io/v1/', DOCKERHUB_CREDENTIALS) {
                         sh "docker push ${IMAGE_NAME}"
                     }
                 }
