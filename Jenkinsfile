@@ -2,36 +2,49 @@ pipeline {
     agent any
 
     environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-danime08')
         IMAGE_NAME = "danime08/cw2-server"
-        DOCKERHUB_CREDENTIALS_ID = 'dockerhub-danime08'  // <-- This must be exact ID
+        PROD_SSH = credentials('prod-ssh')  // SSH credential ID from Jenkins
+        PROD_HOST = "ec2-34-205-76-207.compute-1.amazonaws.com" // your production server IP/DNS
     }
 
     stages {
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t ${IMAGE_NAME} ."
+                script {
+                    sh "docker build -t ${IMAGE_NAME} ."
+                }
             }
         }
 
         stage('Test Docker Container') {
             steps {
-                sh "docker run --rm ${IMAGE_NAME} npm test || true"
+                script {
+                    sh "docker run --rm ${IMAGE_NAME} npm test || true"
+                }
             }
         }
 
         stage('Push to DockerHub') {
             steps {
                 script {
-                    docker.withRegistry('', env.DOCKERHUB_CREDENTIALS_ID) {
+                    docker.withRegistry('', DOCKERHUB_CREDENTIALS) {
                         sh "docker push ${IMAGE_NAME}"
                     }
                 }
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Deploy to Kubernetes on Production') {
             steps {
-                sh 'kubectl apply -f k8s/'
+                sshagent (credentials: ['prod-ssh']) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ubuntu@${PROD_HOST} '
+                            kubectl delete deployment cw2-server-deployment --ignore-not-found
+                            kubectl apply -f ~/k8s/
+                        '
+                    """
+                }
             }
         }
     }
