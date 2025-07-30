@@ -11,8 +11,8 @@ RUN npm install
 # Copy the rest of the application
 COPY . .
 
-# Optional environment variable
-ENV HOSTNAME cw2-node-server
+# Optional environment variable with correct syntax
+ENV HOSTNAME=cw2-node-server
 
 # Expose the port your app runs on
 EXPOSE 8080
