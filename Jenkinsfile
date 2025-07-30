@@ -5,7 +5,7 @@ pipeline {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-danime08')
         IMAGE_NAME = "danime08/cw2-server"
         PROD_SSH = credentials('prod-ssh')  // SSH credential ID from Jenkins
-        PROD_HOST = "ec2-34-205-76-207.compute-1.amazonaws.com" // your production server IP/DNS
+        PROD_HOST = "ec2-35-171-2-25.compute-1.amazonaws.com" // your production server IP/DNS
     }
 
     stages {
