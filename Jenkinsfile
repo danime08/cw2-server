@@ -2,33 +2,29 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-danime08')
+        DOCKERHUB_CREDENTIALS_ID = 'dockerhub-danime08'
         IMAGE_NAME = "danime08/cw2-server"
-        PROD_SSH = credentials('prod-ssh')  // SSH credential ID from Jenkins
-        PROD_HOST = "ec2-35-171-2-25.compute-1.amazonaws.com" // your production server IP/DNS
+        PROD_SSH = credentials('prod-ssh')  // SSH credential object for sshagent
+        PROD_HOST = "ec2-35-171-2-25.compute-1.amazonaws.com"
     }
 
     stages {
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh "docker build -t ${IMAGE_NAME} ."
-                }
+                sh "docker build -t ${IMAGE_NAME} ."
             }
         }
 
         stage('Test Docker Container') {
             steps {
-                script {
-                    sh "docker run --rm ${IMAGE_NAME} npm test || true"
-                }
+                sh "docker run --rm ${IMAGE_NAME} npm test || true"
             }
         }
 
         stage('Push to DockerHub') {
             steps {
                 script {
-                    docker.withRegistry('', DOCKERHUB_CREDENTIALS) {
+                    docker.withRegistry('', DOCKERHUB_CREDENTIALS_ID) {
                         sh "docker push ${IMAGE_NAME}"
                     }
                 }
